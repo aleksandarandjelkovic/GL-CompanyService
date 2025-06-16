@@ -3,7 +3,7 @@
 A modern .NET 9-based RESTful API for managing company information, secured with Duende IdentityServer, and integrated with an Angular frontend. This solution uses Docker Compose to orchestrate all services for seamless development and deployment.
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
-[![Angular](https://img.shields.io/badge/Angular-17-DD0031)](https://angular.io/)
+[![Angular](https://img.shields.io/badge/Angular-20-DD0031)](https://angular.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)](https://www.docker.com/)
 
 ## Table of Contents
@@ -89,7 +89,7 @@ The solution follows clean architecture principles with the following components
 - **Company.Api**: Web API layer that brings everything together and provides endpoints
 - **Company.Auth**: Duende IdentityServer (OAuth2/OpenID Connect provider)
 - **Company.Tests**: Test projects for unit and integration testing
-- **Client**: Angular 17+ SPA with Material UI
+- **Client**: Angular 20 SPA with Material UI
 
 This architecture ensures a clear separation of concerns with dependencies flowing inward toward the Domain layer, eliminating circular dependencies.
 
@@ -108,7 +108,7 @@ The easiest way to run the complete solution is using Docker Compose:
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/CompanyService.git
+   git clone https://github.com/aleksandarandjelkovic/GL-CompanyService.git
    cd CompanyService
    ```
 
