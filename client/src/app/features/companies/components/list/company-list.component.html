@@ -1,0 +1,84 @@
+<div class="container">
+  <div class="header-container">
+    <h1>Companies</h1>
+    <button mat-raised-button color="primary" [routerLink]="['/companies/create']">
+      <mat-icon>add</mat-icon> New Company
+    </button>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <div class="filter-container">
+        <mat-form-field appearance="outline">
+          <mat-label>Filter</mat-label>
+          <input matInput (keyup)="applyFilter($event)" placeholder="Search companies..." #input>
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="loading-shade" *ngIf="isLoading">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+      <div class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort>
+          <!-- Name Column -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Company Name</th>
+            <td mat-cell *matCellDef="let company">{{company.name}}</td>
+          </ng-container>
+
+          <!-- Ticker Column -->
+          <ng-container matColumnDef="ticker">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Ticker</th>
+            <td mat-cell *matCellDef="let company">{{company.ticker}}</td>
+          </ng-container>
+
+          <!-- Exchange Column -->
+          <ng-container matColumnDef="exchange">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Exchange</th>
+            <td mat-cell *matCellDef="let company">{{company.exchange}}</td>
+          </ng-container>
+
+          <!-- ISIN Column -->
+          <ng-container matColumnDef="isin">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>ISIN</th>
+            <td mat-cell *matCellDef="let company">{{company.isin}}</td>
+          </ng-container>
+
+          <!-- Website Column -->
+          <ng-container matColumnDef="website">
+            <th mat-header-cell *matHeaderCellDef>Website</th>
+            <td mat-cell *matCellDef="let company">
+              <a *ngIf="company.website" [href]="company.website" target="_blank">{{company.website}}</a>
+              <span *ngIf="!company.website">-</span>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let company">
+              <button mat-icon-button color="primary" (click)="viewCompany(company.id || '')">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button mat-icon-button color="accent" (click)="editCompany(company.id || '')">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+          <!-- Row shown when no data matches the filter -->
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" colspan="6">No data matching the filter "{{input.value}}"</td>
+          </tr>
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page of companies"></mat-paginator>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div> 

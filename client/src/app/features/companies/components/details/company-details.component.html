@@ -1,0 +1,58 @@
+<div class="container">
+  <div class="header-container">
+    <h1>Company Details</h1>
+    <div class="actions">
+      <button mat-raised-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon> Back to List
+      </button>
+      <button mat-raised-button color="primary" (click)="editCompany()" *ngIf="company?.id">
+        <mat-icon>edit</mat-icon> Edit
+      </button>
+    </div>
+  </div>
+
+  <div class="loading-container" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div class="content" *ngIf="!isLoading && company">
+    <mat-card>
+      <mat-card-content>
+        <div class="company-details">
+          <div class="detail-row">
+            <strong>Name:</strong>
+            <span>{{ company.name }}</span>
+          </div>
+          
+          <div class="detail-row">
+            <strong>Ticker:</strong>
+            <span>{{ company.ticker }}</span>
+          </div>
+          
+          <div class="detail-row">
+            <strong>Exchange:</strong>
+            <span>{{ company.exchange }}</span>
+          </div>
+          
+          <div class="detail-row">
+            <strong>ISIN:</strong>
+            <span>{{ company.isin }}</span>
+          </div>
+          
+          <div class="detail-row" *ngIf="company.website">
+            <strong>Website:</strong>
+            <a [href]="company.website" target="_blank">{{ company.website }}</a>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="no-data" *ngIf="!isLoading && !company">
+    <mat-card>
+      <mat-card-content>
+        <p>No company details found.</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div> 

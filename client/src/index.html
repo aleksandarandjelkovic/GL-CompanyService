@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Company Management</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  
+  <!-- Preconnect to Google Fonts but defer loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- Load fonts after page load with JavaScript -->
+  <script type="text/javascript">
+    window.addEventListener('load', function() {
+      const robotoFont = document.createElement('link');
+      robotoFont.rel = 'stylesheet';
+      robotoFont.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap';
+      document.head.appendChild(robotoFont);
+      
+      const materialIcons = document.createElement('link');
+      materialIcons.rel = 'stylesheet';
+      materialIcons.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
+      document.head.appendChild(materialIcons);
+    });
+  </script>
+
+  <!-- Fallback font-family in case Google Fonts doesn't load -->
+  <style>
+    body {
+      font-family: Roboto, "Helvetica Neue", sans-serif;
+    }
+  </style>
+</head>
+<body class="mat-typography">
+  <app-root></app-root>
+</body>
+</html> 
