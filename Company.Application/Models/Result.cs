@@ -52,4 +52,4 @@ public class Result<T>
     {
         return new Result<T>(false, default, error);
     }
-} 
+}

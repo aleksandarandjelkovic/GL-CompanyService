@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Duende.IdentityServer" Version="7.2.4" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.6" />
   </ItemGroup>
 
 </Project>

@@ -11,10 +11,10 @@ public static class LoggingExtensions
                 .AddJsonFile("appsettings.json")
                 .Build())
             .CreateLogger();
-        
+
         Log.Information("Starting Company.Api");
         builder.Host.UseSerilog();
-        
+
         return builder;
     }
-} 
+}

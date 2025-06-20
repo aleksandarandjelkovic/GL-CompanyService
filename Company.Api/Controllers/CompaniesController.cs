@@ -110,28 +110,67 @@ public class CompaniesController : ControllerBase
     /// <summary>
     /// Updates an existing company.
     /// </summary>
+    /// <param name="id">The ID of the company to update.</param>
     /// <param name="request">The request object containing updated company details.</param>
     /// <returns>The updated company, or an error if update fails.</returns>
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(CompanyResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<ActionResult<CompanyResponse>> Update(Guid id, [FromBody] UpdateCompanyRequest request)
+    {
+        // Validate ID match
+        if (id != request.Id)
+        {
+            return BadRequest(new { error = "ID mismatch between URL and request body" });
+        }
+
+        try
+        {
+            var result = await _companyService.UpdateCompanyAsync(request);
+
+            if (result.IsFailure)
+            {
+                _logger.LogWarning("Failed to update company: {Error}", result.Error);
+                return BadRequest(new { error = result.Error });
+            }
+
+            return Ok(result.Value);
+        }
+        catch (Domain.Common.Exceptions.EntityNotFoundException ex)
+        {
+            _logger.LogWarning("Company not found: {Message}", ex.Message);
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing company.
+    /// </summary>
+    /// <param name="request">The request object containing updated company details.</param>
+    /// <returns>The updated company, or an error if update fails.</returns>
+    [HttpPut]
     [ProducesResponseType(typeof(CompanyResponse), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]
     public async Task<ActionResult<CompanyResponse>> Update([FromBody] UpdateCompanyRequest request)
     {
-        var result = await _companyService.UpdateCompanyAsync(request);
-
-        if (result.IsFailure)
+        try
         {
-            _logger.LogWarning("Failed to update company: {Error}", result.Error);
+            var result = await _companyService.UpdateCompanyAsync(request);
 
-            if (result.Error.Contains("not found"))
+            if (result.IsFailure)
             {
-                return NotFound(new { error = result.Error });
+                _logger.LogWarning("Failed to update company: {Error}", result.Error);
+                return BadRequest(new { error = result.Error });
             }
 
-            return BadRequest(new { error = result.Error });
+            return Ok(result.Value);
         }
-
-        return Ok(result.Value);
+        catch (Domain.Common.Exceptions.EntityNotFoundException ex)
+        {
+            _logger.LogWarning("Company not found: {Message}", ex.Message);
+            return NotFound(new { error = ex.Message });
+        }
     }
 }

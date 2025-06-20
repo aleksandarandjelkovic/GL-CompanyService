@@ -56,4 +56,4 @@ public class ExceptionHandlingMiddleware
         var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse, options));
     }
-} 
+}

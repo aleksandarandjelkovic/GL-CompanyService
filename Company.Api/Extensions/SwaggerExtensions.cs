@@ -1,5 +1,5 @@
-using Microsoft.OpenApi.Models;
 using System.Reflection;
+using Microsoft.OpenApi.Models;
 
 namespace Company.Api.Extensions;
 
@@ -8,7 +8,7 @@ public static class SwaggerExtensions
     public static IServiceCollection AddSwaggerServices(this IServiceCollection services)
     {
         var publicAuthUrl = "http://localhost:5001";
-        
+
         services.AddSwaggerGen(options =>
         {
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -17,7 +17,7 @@ public static class SwaggerExtensions
             {
                 options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
             }
-            
+
             // Add security definition for OAuth2 client credentials flow
             options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
             {
@@ -35,7 +35,7 @@ public static class SwaggerExtensions
                 },
                 Description = "Client ID: swagger<br/>Client Secret: secret"
             });
-            
+
             // Apply the security requirement to all operations
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
@@ -52,10 +52,10 @@ public static class SwaggerExtensions
                 }
             });
         });
-        
+
         return services;
     }
-    
+
     public static IApplicationBuilder UseSwaggerServices(this IApplicationBuilder app, IWebHostEnvironment environment)
     {
         if (environment.IsDevelopment())
@@ -69,16 +69,16 @@ public static class SwaggerExtensions
                 c.OAuthScopes("companyapi");
                 c.OAuthUsePkce();
                 c.OAuthScopeSeparator(" ");
-                
+
                 // Enable client credentials flow
                 c.OAuthUseBasicAuthenticationWithAccessCodeGrant();
                 c.EnableDeepLinking();
                 c.DisplayRequestDuration();
-                
+
                 c.RoutePrefix = "swagger";
             });
         }
-        
+
         return app;
     }
-} 
+}

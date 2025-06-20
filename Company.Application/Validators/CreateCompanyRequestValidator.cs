@@ -45,4 +45,4 @@ namespace Company.Application.Validators
                    && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
     }
-} 
+}

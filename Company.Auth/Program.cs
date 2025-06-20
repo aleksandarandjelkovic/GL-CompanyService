@@ -1,6 +1,11 @@
 using Duende.IdentityServer.Models;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add health checks
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy());
 
 // Add CORS for Swagger UI
 builder.Services.AddCors(options =>
@@ -20,10 +25,10 @@ builder.Services.AddIdentityServer(options =>
     options.Events.RaiseInformationEvents = true;
     options.Events.RaiseFailureEvents = true;
     options.Events.RaiseSuccessEvents = true;
-    
+
     // Allow lowercase scopes to make it easier
     options.EmitStaticAudienceClaim = true;
-    
+
     // Use environment-aware issuer URI
     var isDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
     options.IssuerUri = isDocker ? "http://company-auth:5000" : "http://localhost:5001";
@@ -60,9 +65,9 @@ builder.Services.AddIdentityServer(options =>
         ClientName = "Angular SPA",
         AllowedGrantTypes = GrantTypes.Implicit,
         AllowAccessTokensViaBrowser = true,
-        RedirectUris = { 
+        RedirectUris = {
             "http://localhost:4200/auth-callback",
-            "http://localhost:5000/swagger/oauth2-redirect.html" 
+            "http://localhost:5000/swagger/oauth2-redirect.html"
         },
         AllowedScopes = { "companyapi" },
         AllowOfflineAccess = true,
@@ -77,6 +82,9 @@ var app = builder.Build();
 // Use CORS before IdentityServer
 app.UseCors("default");
 app.UseIdentityServer();
+
+// Add health check endpoint
+app.MapHealthChecks("/health");
 
 app.MapGet("/", () => "Duende IdentityServer is running.");
 

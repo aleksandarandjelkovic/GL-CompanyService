@@ -1,86 +1,106 @@
 services:
-  api:
+  company-api:
     build:
       context: .
       dockerfile: Company.Api/Dockerfile
-    ports:
-      - "5000:5000"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - DOTNET_RUNNING_IN_CONTAINER=true
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:5000
       - POSTGRES_DB=CompanyServiceDb
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=YourStrongPassword123!
+      - DOTNET_NUGET_FALLBACK_PACKAGES=
       - AUTH_AUTHORITY=http://company-auth:5000
+    ports:
+      - "5000:5000"
     depends_on:
-      postgres:
+      company-db:
         condition: service_healthy
-      company-auth:
-        condition: service_started
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
     networks:
       - company-network
-    command: ["sh", "-c", "./wait-for-it.sh postgres:5432 -- dotnet Company.Api.dll"]
 
   company-auth:
     build:
-      context: ./Company.Auth
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Company.Auth/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:5000
+      - POSTGRES_DB=CompanyServiceDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourStrongPassword123!
+      - DOTNET_NUGET_FALLBACK_PACKAGES=
     ports:
       - "5001:5000"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - DOTNET_RUNNING_IN_CONTAINER=true
+    depends_on:
+      company-db:
+        condition: service_healthy
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
     networks:
       - company-network
 
-  postgres:
-    image: postgres:latest
-    container_name: company-postgres
+  company-client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
     ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=CompanyServiceDb
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - "4200:80"
+    depends_on:
+      - company-api
+      - company-auth
     networks:
       - company-network
+
+  company-tests:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    environment:
+      - DOTNET_NUGET_FALLBACK_PACKAGES=
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - POSTGRES_DB=CompanyServiceDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourStrongPassword123!
+      # TestContainers configuration for Windows
+      - TESTCONTAINERS_RYUK_DISABLED=true
+      - TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal
+      - DOCKER_HOST=tcp://host.docker.internal:2375
+      # Additional TestContainers settings
+      - TESTCONTAINERS_REUSE_ENABLE=true
+      - TESTCONTAINERS_REUSE_POLICY=Always
+      - DOTNET_RUNNING_IN_CONTAINER=true
+    volumes:
+      - ./TestResults:/app/TestResults
+      # Docker socket mount - OS specific configuration handled by Docker Desktop
+    # The test script will be run by the ENTRYPOINT in the Dockerfile
+    command: ["--logger", "trx;LogFileName=/app/TestResults/TestResults.trx", "/p:CollectCoverage=true", "/p:CoverletOutputFormat=cobertura", "/p:CoverletOutput=/app/TestResults/coverage.cobertura.xml"]
+    depends_on:
+      company-db:
+        condition: service_healthy
+    networks:
+      - company-network
+
+  company-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourStrongPassword123!
+    ports:
+      - "5432:5432"
+    volumes:
+      - company-db-data:/var/lib/postgresql/data
+      - ./db-init.sql:/docker-entrypoint-initdb.d/db-init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
-      
-  # Frontend Angular Client
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    container_name: company-client
-    ports:
-      - "4200:80"
-    depends_on:
-      - api
-      - company-auth
-    networks:
-      - company-network
-      
-  # Test Service
-  company-tests:
-    build:
-      context: .
-      dockerfile: Company.Tests/Dockerfile
-    environment:
-      - DOTNET_RUNNING_IN_CONTAINER=true
-      - ASPNETCORE_ENVIRONMENT=Test
-    depends_on:
-      postgres:
-        condition: service_healthy
-      api:
-        condition: service_started
-      company-auth:
-        condition: service_started
+      start_period: 10s
     networks:
       - company-network
 
@@ -89,4 +109,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres-data: 
+  company-db-data:

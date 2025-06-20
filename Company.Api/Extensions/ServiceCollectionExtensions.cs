@@ -1,6 +1,7 @@
 using Company.Application.Configuration;
 using Company.Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 
 namespace Company.Api.Extensions;
@@ -11,15 +12,19 @@ public static class ServiceCollectionExtensions
     {
         // Configure environment-specific settings
         ConfigureEnvironmentSpecificSettings(builder);
-        
+
         // Add MVC and API explorer
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
-        
+
         // Add application services
         builder.Services.AddApplication();
         builder.Services.AddInfrastructure(builder.Configuration);
-        
+
+        // Add health checks
+        builder.Services.AddHealthChecks()
+            .AddCheck("self", () => HealthCheckResult.Healthy());
+
         // Add CORS with more permissive configuration
         builder.Services.AddCors(options =>
         {
@@ -31,26 +36,26 @@ public static class ServiceCollectionExtensions
                       .AllowCredentials();
             });
         });
-        
+
         return builder;
     }
-    
+
     private static void ConfigureEnvironmentSpecificSettings(WebApplicationBuilder builder)
     {
         if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
         {
-            builder.Configuration.AddJsonFile("appsettings.Docker.json", optional: false);
-            
+            builder.Configuration.AddJsonFile("appsettings.Docker.json", optional: true);
+
             // Replace environment variables in connection string
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            
+
             if (!string.IsNullOrEmpty(connectionString))
             {
                 connectionString = connectionString
                     .Replace("${POSTGRES_DB}", Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "CompanyServiceDb")
                     .Replace("${POSTGRES_USER}", Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres")
                     .Replace("${POSTGRES_PASSWORD}", Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres");
-                
+
                 builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
             }
             else
@@ -59,4 +64,4 @@ public static class ServiceCollectionExtensions
             }
         }
     }
-} 
+}

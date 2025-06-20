@@ -1,327 +1,242 @@
 # Company Service
 
-A modern .NET 9-based RESTful API for managing company information, secured with Duende IdentityServer, and integrated with an Angular frontend. This solution uses Docker Compose to orchestrate all services for seamless development and deployment.
-
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
-[![Angular](https://img.shields.io/badge/Angular-20-DD0031)](https://angular.io/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)](https://www.docker.com/)
-
-## Table of Contents
-
-- [Architecture Overview](#architecture-overview)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-  - [Running with Docker Compose](#running-with-docker-compose)
-  - [Local Development](#local-development)
-- [Authentication & Authorization](#authentication--authorization)
-  - [Testing with Swagger UI](#testing-with-swagger-ui)
-- [API Endpoints](#api-endpoints)
-- [Database Management](#database-management)
-  - [Entity Framework Core Migrations](#entity-framework-core-migrations)
-  - [Manual Database Setup](#manual-database-setup)
-- [Testing and Code Coverage](#testing-and-code-coverage)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
-  - [Environment Variables](#environment-variables)
-  - [appsettings.json](#appsettingsjson)
-  - [Logging Configuration](#logging-configuration)
-- [Troubleshooting](#troubleshooting)
-- [Extending the Project](#extending-the-project)
-- [License](#license)
-
-## Architecture Overview
-
-```mermaid
-flowchart TD
-    User((User)) --> Client
-    
-    subgraph "Frontend"
-        Client["Angular Client<br/>Port: 4200"]
-    end
-    
-    subgraph "Backend Services"
-        API["Company.Api<br/>ASP.NET Core Web API<br/>Port: 5000"]
-        Auth["Company.Auth<br/>Duende IdentityServer<br/>Port: 5001"]
-        App["Company.Application<br/>Business Logic Layer"]
-        Domain["Company.Domain<br/>Domain Entities & Rules"]
-        Infra["Company.Infrastructure<br/>Data Access Layer"]
-    end
-    
-    subgraph "Database"
-        DB[(PostgreSQL<br/>Port: 5432)]
-    end
-    
-    Client -- "1. HTTP Requests" --> API
-    Client -- "2. Authentication<br/>OAuth2/OpenID" --> Auth
-    Auth -- "3. Issues JWT Token" --> Client
-    Client -- "4. Requests with JWT" --> API
-    
-    API -- "Uses" --> App
-    App -- "Uses" --> Domain
-    Infra -- "Uses" --> Domain
-    API -- "Uses" --> Infra
-    Infra -- "Data Access" --> DB
-    
-    API -- "Validates Tokens" --> Auth
-    
-    classDef angular fill:#dd0031,stroke:#333,color:white;
-    classDef api fill:#512bd4,stroke:#333,color:white;
-    classDef auth fill:#1976d2,stroke:#333,color:white;
-    classDef domain fill:#43a047,stroke:#333,color:white;
-    classDef infra fill:#ff9800,stroke:#333,color:white;
-    classDef db fill:#607d8b,stroke:#333,color:white;
-    classDef app fill:#9c27b0,stroke:#333,color:white;
-    
-    class Client angular;
-    class API api;
-    class Auth auth;
-    class Domain domain;
-    class Infra infra;
-    class DB db;
-    class App app;
-```
-
-The solution follows clean architecture principles with the following components:
-
-- **Company.Domain**: Core business entities and rules with no external dependencies
-- **Company.Application**: Business logic that depends only on the Domain layer
-- **Company.Infrastructure**: Data access and external services that implement interfaces defined in Domain
-- **Company.Api**: Web API layer that brings everything together and provides endpoints
-- **Company.Auth**: Duende IdentityServer (OAuth2/OpenID Connect provider)
-- **Company.Tests**: Test projects for unit and integration testing
-- **Client**: Angular 20 SPA with Material UI
-
-This architecture ensures a clear separation of concerns with dependencies flowing inward toward the Domain layer, eliminating circular dependencies.
+A .NET Clean Architecture project with API, Auth, and Client services.
 
 ## Prerequisites
 
-- [Docker](https://www.docker.com/products/docker-desktop/) and [Docker Compose](https://docs.docker.com/compose/install/)
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet) (for local development)
-- [Node.js](https://nodejs.org/) v18+ and npm (for client app development)
-- [PostgreSQL](https://www.postgresql.org/download/) (only for local development without Docker)
+- Docker
+- Docker Compose
 
-## Getting Started
+## Running the Application
 
-### Running with Docker Compose
+To run the entire application (API, Auth, PostgreSQL database, client, and all tests):
 
-The easiest way to run the complete solution is using Docker Compose:
-
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/aleksandarandjelkovic/GL-CompanyService.git
-   cd CompanyService
-   ```
-
-2. Build and start all services:
-   ```sh
-   docker-compose up --build
-   ```
-
-3. Access the services:
-   - **Angular Client**: http://localhost:4200
-   - **API Swagger UI**: http://localhost:5000/swagger
-   - **IdentityServer**: http://localhost:5001
-   - **PostgreSQL**: localhost:5432 (credentials in docker-compose.yml)
-
-4. To stop all services:
-   ```sh
-   docker-compose down
-   ```
-
-5. To remove volumes (database data) when stopping:
-   ```sh
-   docker-compose down -v
-   ```
-
-### Local Development
-
-For development without Docker:
-
-1. Update connection strings in `appsettings.Development.json` files in both API and Auth projects
-2. Start the Auth server:
-   ```sh
-   cd Company.Auth
-   dotnet run
-   ```
-
-3. Start the API:
-   ```sh
-   cd Company.Api
-   dotnet run
-   ```
-
-4. Start the Angular client:
-   ```sh
-   cd client
-   npm install
-   npm start
-   ```
-
-## Authentication & Authorization
-
-- The API uses JWT Bearer authentication with tokens issued by IdentityServer
-- Default configured flows:
-  - **Client Credentials flow**: For service-to-service API access
-  - **Authorization Code with PKCE**: For the Angular SPA client
-
-### Testing with Swagger UI
-
-1. Open Swagger UI at http://localhost:5000/swagger
-2. Click "Authorize" button
-3. Use the following client credentials:
-   - **Client ID**: `swagger`
-   - **Client Secret**: `secret`
-4. Click "Authorize" to authenticate
-5. Now you can test any API endpoint with the obtained token
-
-## API Endpoints
-
-All endpoints require a valid JWT access token.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/companies` | Get all companies |
-| GET | `/api/companies/{id}` | Get a specific company by ID |
-| GET | `/api/companies/isin/{isin}` | Get a company by ISIN |
-| POST | `/api/companies` | Create a new company |
-| PUT | `/api/companies/{id}` | Update an existing company |
-
-## Database Management
-
-### Entity Framework Core Migrations
-
-Migrations are automatically applied when the application starts in Docker. For manual management:
-
-1. Apply existing migrations:
-   ```sh
-   cd Company.Api
-   dotnet ef database update --project ../Company.Infrastructure
-   ```
-
-2. Create a new migration:
-   ```sh
-   cd Company.Api
-   dotnet ef migrations add MigrationName --project ../Company.Infrastructure
-   ```
-
-3. Generate SQL script:
-   ```sh
-   cd Company.Api
-   dotnet ef migrations script --project ../Company.Infrastructure --output ../Company.Infrastructure/Migrations/script.sql
-   ```
-
-### Manual Database Setup
-
-To manually set up the database schema:
-
-1. Ensure PostgreSQL is running
-2. Connect to your database using pgAdmin, DBeaver, or psql
-3. Run the SQL script:
-   ```sh
-   psql -U postgres -d CompanyServiceDb -f Scripts/InitialCreate.sql
-   ```
-
-## Testing and Code Coverage
-
-The solution includes comprehensive unit and integration tests using xUnit.
-
-### Running Tests
-```sh
-dotnet test
+```bash
+docker-compose up
 ```
 
-### Generating Code Coverage Reports
-```sh
-dotnet test --collect:"XPlat Code Coverage"
-reportgenerator -reports:"Company.Tests\TestResults\*\coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html
+Or to run in detached mode:
+
+```bash
+docker-compose up -d
 ```
 
-After generating the report, open `coveragereport\index.html` in your browser to view coverage metrics.
+This will start all services:
+
+- **Company API**: http://localhost:5000
+- **Auth Service**: http://localhost:5001
+- **Client**: http://localhost:4200
+- **PostgreSQL**: localhost:5432
+- **Unit Tests**: Runs automatically
+- **Integration Tests**: Runs automatically
+- **Coverage Report**: Generated automatically
+
+The test results and coverage reports will be available in the `TestResults` directory.
+
+## Running Specific Services
+
+If you want to run only specific services:
+
+```bash
+# Run only the unit tests
+docker-compose run --rm unit-tests
+
+# Run only the integration tests
+docker-compose run --rm integration-tests
+
+# Generate only the coverage report
+docker-compose run --rm coverage
+```
 
 ## Project Structure
 
+- **Company.Api**: REST API for the company service
+- **Company.Auth**: Authentication service using Duende IdentityServer
+- **Company.Domain**: Domain models and business logic
+- **Company.Application**: Application services and use cases
+- **Company.Infrastructure**: Data access and external services
+- **Company.Api.UnitTests**: Unit tests for the API
+- **Company.Infrastructure.UnitTests**: Unit tests for the infrastructure layer
+- **Company.Application.UnitTests**: Unit tests for the application layer
+- **Company.Api.IntegrationTests**: Integration tests for the API
+
+## Development
+
+### API Endpoints
+
+- `GET /api/companies`: Get all companies
+- `GET /api/companies/{id}`: Get a company by ID
+- `POST /api/companies`: Create a new company
+- `PUT /api/companies/{id}`: Update a company
+- `DELETE /api/companies/{id}`: Delete a company
+
+### Authentication
+
+The API is secured with OAuth 2.0. To access protected endpoints, you need to:
+
+1. Get a token from the Auth service
+2. Include the token in the Authorization header of your requests
+
+## Testing Strategy
+
+This section outlines the testing approach for the Company Service application, including the structure of test projects, best practices, and guidelines for writing and running tests.
+
+### Test Project Structure
+
+The solution contains the following test projects:
+
+1. **Company.Api.UnitTests**
+   - Unit tests for API controllers
+   - Tests controller logic in isolation with mocked dependencies
+
+2. **Company.Application.UnitTests**
+   - Unit tests for application services, validators, and DTOs
+   - Tests business logic in isolation
+
+3. **Company.Infrastructure.UnitTests**
+   - Unit tests for repositories and database operations
+   - Uses in-memory database for testing
+
+4. **Company.Api.IntegrationTests**
+   - Integration tests for API endpoints
+   - Uses Testcontainers for PostgreSQL database
+   - Tests the full request-response cycle
+
+### Testing Technologies
+
+- **xUnit**: Test framework
+- **FluentAssertions**: Fluent assertion library
+- **Moq**: Mocking framework
+- **Testcontainers**: Container management for integration tests
+- **Microsoft.AspNetCore.Mvc.Testing**: WebApplicationFactory for API testing
+
+### Test Patterns and Best Practices
+
+#### Unit Tests
+
+- Follow the Arrange-Act-Assert pattern
+- Use descriptive test names that explain the scenario and expected outcome
+- Mock external dependencies
+- Test one behavior per test method
+- Use data-driven tests for testing multiple scenarios
+
+#### Integration Tests
+
+- Use Testcontainers for database integration tests
+- Clean up test data after each test
+- Use collection fixtures to control parallelization
+- Use TestDataFactory for consistent test data creation
+
+### Test Data Management
+
+The solution includes a `TestDataFactory` class that provides methods for creating test data consistently across all test projects. This factory helps ensure that test data follows the same patterns and constraints.
+
+```csharp
+// Example of using TestDataFactory
+var company = TestDataFactory.CreateTestCompany(
+    nameSuffix: "Test",
+    ticker: "TST",
+    exchange: "NYSE",
+    isin: "US1234567890",
+    website: "https://test-company.com"
+);
 ```
-CompanyService/
-├── Company.Api/            # API endpoints, controllers, and configuration
-├── Company.Auth/           # IdentityServer implementation
-├── Company.Application/    # Business logic, DTOs, and validation
-├── Company.Domain/         # Domain entities and business rules
-├── Company.Infrastructure/ # Data access and persistence
-├── Company.Tests/          # Unit and integration tests
-├── client/                 # Angular frontend application
-├── docker-compose.yml      # Docker Compose configuration
-├── wait-for-it.sh          # Helper script for Docker service dependencies
-└── README.md               # This file
+
+### Running Tests
+
+#### Running Tests Locally
+
+```bash
+# Run all tests
+dotnet test
+
+# Run specific test project
+dotnet test ./Company.Api.UnitTests
+
+# Run with filter
+dotnet test --filter "Category=UnitTest"
+
+# Run with coverage
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
 ```
 
-## Configuration
+#### Running Tests in Docker
 
-### Environment Variables
+The solution includes Docker support for running tests in containers:
 
-- **AUTH_AUTHORITY**: URL of the IdentityServer (configured in docker-compose.yml)
-- **POSTGRES_DB**: Database name
-- **POSTGRES_USER**: Database username
-- **POSTGRES_PASSWORD**: Database password
-- **ASPNETCORE_ENVIRONMENT**: Development/Staging/Production
+```bash
+# Run tests in Docker
+docker-compose up test-service
+```
 
-### appsettings.json
+### Test Parallelization
 
-Key configuration options in appsettings.json files:
+Tests are configured to run in parallel with the following constraints:
 
-- **ConnectionStrings**: Database connection strings
-- **Serilog**: Logging configuration
-- **IdentityServer**: Auth server configuration
+- Tests within the same collection do not run in parallel with each other
+- Different collections can run in parallel
+- Tests that use the database are grouped in collections with `DisableParallelization = true`
+- In-memory database tests can run in parallel
 
-### Logging Configuration
+### Test Categories
 
-The solution uses Serilog for structured logging, with configuration centralized in the Company.Api project. Log settings can be found in:
+Tests are categorized using xUnit traits:
 
-- `Company.Api/appsettings.json` - The main logging configuration
-- `Company.Api/Extensions/LoggingExtensions.cs` - Serilog setup code
+```csharp
+[Trait("Category", "UnitTest")]
+[Trait("Category", "IntegrationTest")]
+[Trait("Category", "RepositoryTest")]
+```
 
-Logs are written to both the console and rolling file logs in the `Logs` directory.
+### Continuous Integration
+
+Tests are automatically run in the CI pipeline on pull requests and merges to the main branch. Test results and coverage reports are published as artifacts.
 
 ## Troubleshooting
 
-### Common Issues
+### Docker Issues
 
-1. **Docker containers fail to start**
-   - Check Docker logs: `docker-compose logs [service-name]`
-   - Ensure ports 5000, 5001, 4200, and 5432 are not in use by other applications
-   - Try rebuilding with `docker-compose up --build`
+If you encounter Docker-related issues:
 
-2. **Database connection issues**
-   - Verify PostgreSQL is running: `docker-compose ps postgres`
-   - Check connection strings in appsettings.json
-   - Ensure database migrations are applied
+```bash
+# Remove all containers and volumes
+docker-compose down -v
 
-3. **Authentication problems**
-   - Verify the Auth server is running at http://localhost:5001
-   - Check that AUTH_AUTHORITY environment variable is correctly set
-   - Ensure client configurations in Company.Auth match your needs
+# Rebuild all images
+docker-compose build --no-cache
 
-4. **Angular app errors**
-   - Check browser console for errors
-   - Verify proxy configuration in client/proxy.conf.json
-   - Ensure npm dependencies are installed: `npm install`
+# Start services again
+docker-compose up -d
+```
 
-## Extending the Project
+### Database Issues
 
-1. Add new entities to the Domain project
-2. Update or add DbContext configurations in the Infrastructure project
-3. Create DTOs and services in the Application project
-4. Add controllers to the API project
-5. Register new API scopes/clients in the Auth server as needed
-6. Add new components and services to the Angular client
+If you need to reset the database:
 
-## License
+```bash
+# Stop all services
+docker-compose down
 
-[MIT License](LICENSE)
+# Remove the PostgreSQL volume
+docker volume rm gl-companyservice_postgres-data
 
-Copyright (c) 2025 Aleksandar Andjelkovic
+# Start services again
+docker-compose up -d
+```
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+### Testing Issues
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+1. **Docker Container Issues**
+   - Ensure Docker is running
+   - Check container logs: `docker logs <container_id>`
+   - Increase resource limits if needed
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+2. **Database Connection Issues**
+   - Check connection strings
+   - Verify PostgreSQL is running
+   - Check network connectivity
+
+3. **Test Failures**
+   - Look for test output in the logs
+   - Check test data setup and cleanup
+   - Verify that tests are isolated 
